@@ -5,7 +5,6 @@
    # Edited  : 13:30 11-08-2020
 #################################################################################
 
-
 #The different libraries are imported.
 import pygame
 import tkinter
@@ -15,20 +14,48 @@ import random
 win_w = 1000
 win_h = 1000
 
-FPS = 50
+FPS = 60
 
 run = True
 
+#Settings for the simulation.
+num_of_creatures_beginning = 3
+
+
+
+
 #The class for the creatures.
 class creature:
+    #Class Variables
+    num_of_creatures = 0
 
+    creatures_pos_x = []
+    creatures_pos_y = []
+
+    creatures_alive = []
+    creatures_dead = []
+
+    #Class functions
     def __init__(self):
+        
+        self.x = 0
+        self.y = 0
+
         self.alive = True
         self.energy = 1000
+
         self.velocity = 1
         self.sense = 1
         self.size = 1
+
         self.pathfinding = False
+
+        creature.creatures_alive.append(self)
+        creature.num_of_creatures += 1
+
+    #A location for the first spawn gets searched
+    def first_spawn(self):
+        pass
 
     #The function draws a creature on pygame.
     def draw(self):
@@ -51,7 +78,6 @@ class creature:
         pass
 
 
-
 #The class for the food.
 class food:
 
@@ -72,12 +98,17 @@ class food:
   # Mainloop
 #################################################################################
 
+#New creatures and food get spawned.
+creature_1 = creature()
+
+print(creature.creatures_alive, creature_1.energy)
+
 #Pygame gets started.
 pygame.init()
 win = pygame.display.set_mode((win_w, win_h))
 
 #The game gets named.
-pygame.display.set_caption("First Game")
+pygame.display.set_caption("Natural Selection")
 
 
 while run:
@@ -89,6 +120,10 @@ while run:
     win.fill ((10,10,10))
     
     
+    for i in creature.creatures_alive:
+        pygame.draw.rect(win, (255,0,0), (50,50,5,5))
+
+
     pygame.display.update()
 
 

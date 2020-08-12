@@ -22,7 +22,10 @@ emp_1 = Employee('Corey', 'Schafer', 50000)
 emp_2 = Employee('Test', 'User', 60000)
 
 
-print(Employee.num_of_emps)
+print(emp_1)
+
+
+#print(Employee.num_of_emps)
 
 
 
@@ -37,7 +40,7 @@ print(Employee.num_of_emps)
 #You can edit Class Variables only for one instance like this:
 #emp_1.raise_amount = 1.05
 
-#rint(Employee.__dict__)
+#print(Employee.__dict__)
 
 
 #Class Variables can be accessed by instances and classes.

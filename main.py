@@ -19,6 +19,9 @@ FPS = 60
 run = True
 
 #Settings for the simulation.
+creature_size = 50
+food_size = 50
+
 num_of_creatures_beginning = 3
 
 
@@ -54,12 +57,58 @@ class creature:
         creature.num_of_creatures += 1
 
     #A location for the first spawn gets searched
-    def first_spawn(self):
-        pass
+    def first_spawn(self,creature_size,creatures_pos_x,creatures_pos_y):
+        decider = random.randrange(0,2)
+        searching_active = True
+        
+        #The decider decides wheater creatures spawn across the x or y axis (0 = x-axis, 1 = y-axis).
+        if decider == 0:
+            
+            while searching_active: #Searching active means, that a possible (unoccupied) location still hasn't been found.
+                self.x = random.randrange(creature_size, (1000-2*creature_size)) #A random x position gets searched on the x axis, without the corners.
+                self.y = random.choice([0, (1000-creature_size)]) #It gets selected randomly wheater the creature starts at the top or bottom.
+                
+                #It gets checked if there is another creature in the same place.
+                counter1 = self.x
+                for _ in range(creature_size):
+                    if counter1 in creatures_pos_x:
+                        searching_active = True
+                        break
+
+                    else:
+                        searching_active = False
+                        counter1 += 1
+
+            #Every x from the new found creature gets saved.
+            counter2 = self.x
+            for _ in range(creature_size):
+                creatures_pos_x.append(counter2)
+                counter2 += 1
+
+        if decider == 1:
+            
+            while searching_active:
+                self.x = random.choice([0, (1000-creature_size)])
+                self.y = random.randrange(creature_size,(1000-2*creature_size))
+                counter1 = self.x
+                
+                for _ in range(creature_size):
+                    if counter1 in creatures_pos_x:
+                        searching_active = True
+                        break
+
+                    else:
+                        searching_active = False
+                        counter1 += 1
+
+                    counter2 = self.y
+                    for _ in range(creature_size):
+                        creatures_pos_y.append(counter2)
+                        counter2 += 1
 
     #The function draws a creature on pygame.
-    def draw(self):
-        pass
+    def draw(self,creature_size):
+        pygame.draw.rect(win, (255,0,0), (self.x,self.y,creature_size,creature_size))
     
     #The function changes the x and y of a creature somewhat randomly.
     def move_searching(self):
@@ -98,10 +147,15 @@ class food:
   # Mainloop
 #################################################################################
 
-#New creatures and food get spawned.
+#New creatures and food instances get created.
 creature_1 = creature()
+creature_2 = creature()
+creature_3 = creature()
+creature_4 = creature()
+creature_5 = creature()
+creature_6 = creature()
 
-print(creature.creatures_alive, creature_1.energy)
+
 
 #Pygame gets started.
 pygame.init()
@@ -111,6 +165,11 @@ win = pygame.display.set_mode((win_w, win_h))
 pygame.display.set_caption("Natural Selection")
 
 
+#The first spawn gets done.
+for self in creature.creatures_alive:
+    self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y)
+
+#Loop
 while run:
     #How often the screen gets drawn.
     pygame.time.delay(FPS)
@@ -120,9 +179,10 @@ while run:
     win.fill ((10,10,10))
     
     
-    for i in creature.creatures_alive:
-        pygame.draw.rect(win, (255,0,0), (50,50,5,5))
-
+    #All creatures that are alive get spawned.
+    for self in creature.creatures_alive:
+        self.draw(creature_size)
+        
 
     pygame.display.update()
 
@@ -132,6 +192,10 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+
+
+#Debugging.
+
 
 #Pygame gets closed.
 pygame.quit()

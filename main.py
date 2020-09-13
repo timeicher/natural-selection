@@ -101,10 +101,10 @@ class creature:
                         searching_active = False
                         counter1 += 1
 
-                    counter2 = self.y
-                    for _ in range(creature_size):
-                        creatures_pos_y.append(counter2)
-                        counter2 += 1
+            counter2 = self.y
+            for _ in range(creature_size):
+                creatures_pos_y.append(counter2)
+                counter2 += 1
 
     #The function draws a creature on pygame.
     def draw(self,creature_size):
@@ -195,6 +195,7 @@ while run:
 
 
 #Debugging.
+
 
 
 #Pygame gets closed.

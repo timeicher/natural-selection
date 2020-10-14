@@ -2,7 +2,7 @@
    # Content : Main program of NATURAL SELECTION
    # Creator : Tim Eicher
    # Created : July 2020
-   # Edited  : 13:30 11-08-2020
+   # Edited  : 14:25 12-10-2020
 #################################################################################
 
 #The different libraries are imported.
@@ -20,11 +20,12 @@ run = True
 
 #Settings for the simulation.
 creature_size = 50
-food_size = 50
+food_size = 10
 
 num_of_creatures_beginning = 3
+num_of_food_beginning = 10
 
-
+food_border = 100
 
 
 #The class for the creatures.
@@ -90,10 +91,10 @@ class creature:
             while searching_active:
                 self.x = random.choice([0, (1000-creature_size)])
                 self.y = random.randrange(creature_size,(1000-2*creature_size))
-                counter1 = self.x
+                counter1 = self.y
                 
                 for _ in range(creature_size):
-                    if counter1 in creatures_pos_x:
+                    if counter1 in creatures_pos_y:
                         searching_active = True
                         break
 
@@ -109,7 +110,8 @@ class creature:
     #The function draws a creature on pygame.
     def draw(self,creature_size):
         pygame.draw.rect(win, (255,0,0), (self.x,self.y,creature_size,creature_size))
-    
+        pygame.draw.rect(win, (10,10,10), (self.x+3,self.y+3,creature_size-6,creature_size-6))
+
     #The function changes the x and y of a creature somewhat randomly.
     def move_searching(self):
         pass
@@ -130,13 +132,55 @@ class creature:
 #The class for the food.
 class food:
 
+    food_not_eaten = []
+    food_eaten = []
+
+    food_pos_x = []
+    food_pos_y = []    
+
     def __init__(self):
         self.energy = 500
         self.eaten = False
-    
+        self.x = 0
+        self.y = 0
+        food.food_not_eaten.append(self)
+
+    #An unoccupied position for a food getssearched.
+    def first_spawn(self,food_size,food_pos_x,food_pos_y):
+        searching_active = True
+            
+        while searching_active: #Searching active means, that a possible (unoccupied) location still hasn't been found.
+            self.x = random.randrange(food_border, (1000-food_border)) #A random x position, within the border, gets searched on the x axis.
+            self.y = random.randrange(food_border, (1000-food_border)) #A random y position, within the border, gets searched on the y axis.
+            
+            #It gets checked if there is another food in the same place.
+            counter1 = self.x
+            counter2 = self.y
+            for _ in range(food_size):
+                if counter1 in food_pos_x and counter2 in food_pos_y:
+                    searching_active = True
+                    break
+
+                else:
+                    searching_active = False
+                    counter1 += 1
+                    counter2 += 1
+
+        #Every x from the new found food gets saved.
+        counter3 = self.x
+        for _ in range(food_size):
+            food_pos_x.append(counter3)
+            counter3 += 1
+
+        #Every y from the new found food gets saved.
+        counter4 = self.y
+        for _ in range(food_size):
+            food_pos_y.append(counter4)
+            counter4 += 1
+
     #The function draws one food on a predefined location.
-    def draw(self):
-        pass
+    def draw(self, food_size):
+        pygame.draw.rect(win, (0,0,255), (self.x,self.y,food_size,food_size))
 
     #The function removes the food from the grid.
     def get_eaten(self):
@@ -154,7 +198,16 @@ creature_3 = creature()
 creature_4 = creature()
 creature_5 = creature()
 creature_6 = creature()
+creature_7 = creature()
+creature_8 = creature()
+creature_9 = creature()
 
+food_1 = food()
+food_2 = food()
+food_3 = food()
+food_4 = food()
+food_5 = food()
+food_6 = food()
 
 
 #Pygame gets started.
@@ -169,6 +222,9 @@ pygame.display.set_caption("Natural Selection")
 for self in creature.creatures_alive:
     self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y)
 
+for self in food.food_not_eaten:
+    self.first_spawn(food_size,food.food_pos_x,food.food_pos_y)
+
 #Loop
 while run:
     #How often the screen gets drawn.
@@ -179,9 +235,12 @@ while run:
     win.fill ((10,10,10))
     
     
-    #All creatures that are alive get spawned.
+    #All creatures and food that are alive get drawn.
     for self in creature.creatures_alive:
         self.draw(creature_size)
+    
+    for self in food.food_not_eaten:
+        self.draw(food_size)
         
 
     pygame.display.update()

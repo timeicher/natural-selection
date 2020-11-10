@@ -1,13 +1,8 @@
-#import pygame
+import numpy as np
 
-#import pygame.math as math
+x = np.array([3,2])
+y = np.array([5,1])
+z = x + y
 
-#test = math.vector2(200,200)
-
-#print(test.x)
-#print(test.y)
-
-
-
-v = (2,3)
+print(z)
 

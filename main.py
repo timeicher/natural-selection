@@ -2,13 +2,15 @@
    # Content : Main program of NATURAL SELECTION
    # Creator : Tim Eicher
    # Created : July 2020
-   # Edited  : 14:25 12-10-2020
+   # Edited  : 15:43 10-11-2020
 #################################################################################
 
 #The different libraries are imported.
-import pygame
-import tkinter
-import random
+import pygame       #The world itself runs on pygame
+import tkinter      #Graphical Interface for setting parameters
+import random       #For chosing random numbers
+import numpy as np  #For Vector Calculations
+import math         #Functions for mathematical calculations (e.g sinus)
 
 #Settings for the pygame implementation.
 win_w = 1000
@@ -19,13 +21,16 @@ FPS = 60
 run = True
 
 #Settings for the simulation.
-creature_size = 50
+creature_size = 40
 food_size = 10
 
-num_of_creatures_beginning = 3
-num_of_food_beginning = 10
+num_of_creatures_beginning = 10
+num_of_food_beginning = 20
 
-food_border = 100
+food_border = 300 #define how far away from the border food spawns
+
+i_direction_range = 90 #set the range in which creatures can go at the beginning.
+standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
 
 
 #The class for the creatures.
@@ -44,6 +49,8 @@ class creature:
         
         self.x = 0
         self.y = 0
+        self.vector = np.array([self.x,self.y])
+        self.initial_direction = 0
 
         self.alive = True
         self.energy = 1000
@@ -106,23 +113,83 @@ class creature:
             for _ in range(creature_size):
                 creatures_pos_y.append(counter2)
                 counter2 += 1
+        
+        self.vector = np.array([self.x,self.y])
 
     #The function draws a creature on pygame.
     def draw(self,creature_size):
-        pygame.draw.rect(win, (255,0,0), (self.x,self.y,creature_size,creature_size))
-        pygame.draw.rect(win, (10,10,10), (self.x+3,self.y+3,creature_size-6,creature_size-6))
+        pygame.draw.rect(win, (255,0,0), (int(self.x),int(self.y),creature_size,creature_size))
+        pygame.draw.rect(win, (10,10,10), (int(self.x+5),int(self.y+5),creature_size-10,creature_size-10))
+
+    #A random initial direction is given to all creatures.
+    def direction(self,i_direction_range):
+        rand_range = random.randrange(0,i_direction_range+1) #General random range
+
+        #Depending on the starting position the exact initial direction gets calculated.
+        if self.x == 0:
+            self.initial_direction = 90 - (1/2) * i_direction_range + rand_range 
+
+        elif self.x == 1000-creature_size:
+            self.initial_direction = 270 - (1/2) * i_direction_range + rand_range
+
+        elif self.y == 0:
+            self.initial_direction = 180 - (1/2) * i_direction_range + rand_range
+
+        elif self.y == 1000-creature_size:
+            self.initial_direction = 360 - (1/2) * i_direction_range + rand_range
+
+        #If the value is above 360 it subtracts 360.
+        while self.initial_direction > 360:
+            self.initial_direction -= 360
+
 
     #The function changes the x and y of a creature somewhat randomly.
-    def move_searching(self):
-        pass
-    
-    #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
-    def scan(self):
-        pass
+    def move_searching(self,FPS):
+
+        #For the x speed the cosinus is used. Because 0 degrees is pointing north I have to add 90 in order for it to function with the cosinus.
+        self.x += self.velocity * math.cos(math.radians(self.initial_direction-90))
+
+
+        #For the y speed the sinus is used. Because 0 degrees is pointing north I have to add 90 in order for it to function with the cosinus.
+        self.y += self.velocity * math.sin(math.radians(self.initial_direction-90))
+
+
+        #If the creature reaches the edge a new 
+        #Depending on the position the exact initial direction gets calculated.
+        if self.x <= 0:
+            rand_range = random.randrange(0,i_direction_range+1) #General random range
+            self.initial_direction = 90 - (1/2) * i_direction_range + rand_range
+
+        elif self.x >= 1000-creature_size:
+            rand_range = random.randrange(0,i_direction_range+1) #General random range
+            self.initial_direction = 270 - (1/2) * i_direction_range + rand_range
+
+        elif self.y <= 0:
+            rand_range = random.randrange(0,i_direction_range+1) #General random range
+            self.initial_direction = 180 - (1/2) * i_direction_range + rand_range
+
+        elif self.y >= 1000-creature_size:
+            rand_range = random.randrange(0,i_direction_range+1) #General random range
+            self.initial_direction = 360 - (1/2) * i_direction_range + rand_range
+
+        #If the value is above 360 it subtracts 360.
+        while self.initial_direction > 360:
+            self.initial_direction -= 360
+
 
     #If the creature has found food, this function pathfinds towards that food.
     def move_pathfinding(self):
         pass
+
+    #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
+    def scan(self,standard_sense):
+        
+        creature_boundries = [self.x+(1/2)*creature_size, self.y+(1/2)*creature_size]
+        for creature_boundries in len(int(standard_sense*self.sense+1)):
+            pass
+        
+            
+
 
     #The function checks if the creature can reproduce. If yes: the creature reproduces.
     def reproduce(self):
@@ -192,22 +259,11 @@ class food:
 #################################################################################
 
 #New creatures and food instances get created.
-creature_1 = creature()
-creature_2 = creature()
-creature_3 = creature()
-creature_4 = creature()
-creature_5 = creature()
-creature_6 = creature()
-creature_7 = creature()
-creature_8 = creature()
-creature_9 = creature()
+for _ in range(num_of_creatures_beginning):
+    creature_x = creature()
 
-food_1 = food()
-food_2 = food()
-food_3 = food()
-food_4 = food()
-food_5 = food()
-food_6 = food()
+for _ in range(num_of_food_beginning):
+    food_x = food()
 
 
 #Pygame gets started.
@@ -221,9 +277,12 @@ pygame.display.set_caption("Natural Selection")
 #The first spawn gets done.
 for self in creature.creatures_alive:
     self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y)
+    self.direction(i_direction_range)
+
 
 for self in food.food_not_eaten:
     self.first_spawn(food_size,food.food_pos_x,food.food_pos_y)
+
 
 #Loop
 while run:
@@ -232,16 +291,19 @@ while run:
 
 
     #The different elements get drawn and updated.
-    win.fill ((10,10,10))
+    win.fill ((240,240,240))
     
     
-    #All creatures and food that are alive get drawn.
-    for self in creature.creatures_alive:
-        self.draw(creature_size)
-    
+    #All creatures and food that are alive get drawn. Different functions get excecuted.
     for self in food.food_not_eaten:
         self.draw(food_size)
-        
+
+
+    for self in creature.creatures_alive:
+        self.draw(creature_size)
+
+        if self.pathfinding == False:
+            self.move_searching(FPS)
 
     pygame.display.update()
 

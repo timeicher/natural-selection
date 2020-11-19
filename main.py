@@ -16,7 +16,7 @@ import math         #Functions for mathematical calculations (e.g sinus)
 win_w = 1000
 win_h = 1000
 
-FPS = 60
+FPS = 30
 
 run = True
 
@@ -61,7 +61,7 @@ class creature:
         self.energy = 1000
 
         #Genes
-        self.velocity = 3
+        self.velocity = 1
         self.sense = 1
         self.size = 1
 
@@ -144,24 +144,21 @@ class creature:
         self.velocity_x = vector_right[0]
         self.velocity_y = vector_right[1]
 
-        print(math.sqrt(vector_right[0]**2+vector_right[1]**2))
 
     #The function changes the x and y of a creature somewhat randomly.
     def move_searching(self,FPS,creature_size):
 
-        #For the x speed the cosinus is used. Because 0 degrees is pointing north I have to add 90 in order for it to function with the cosinus.
+        #The x component gets added.
         self.x += self.velocity * self.velocity_x
 
 
-        #For the y speed the sinus is used. Because 0 degrees is pointing north I have to add 90 in order for it to function with the cosinus.
+        #The y component gets added.
         self.y += self.velocity * self.velocity_y
 
-
+        #The vector gets updated
         self.vector = np.array([self.x,self.y])
-        print(self.vector)
         
         #If the creature reaches the edge the direction updates to the middle of the field again.
-
         if self.x <= 0 or self.x >= 1000-creature_size or self.y <= 0 or self.y >= 1000-creature_size:
             creature.direction(self,creature_size)
        
@@ -173,16 +170,57 @@ class creature:
         pass
 
     #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
-    def scan(self,standard_sense):
+    def scan(self,standard_sense,creature_size,food_size,food_pos_x,food_pos_y):
         
-        creature_boundries = [self.x+(1/2)*creature_size, self.y+(1/2)*creature_size]
-        for creature_boundries in len(int(standard_sense*self.sense+1)):
-            pass
+        #The radius in which the creature checks for food.
+        scan_radius = standard_sense*self.sense
+
+        #The startpoint for the scanning. (-1/2 creature size for the middlepoint of the creature; -1/2 scan_radius for the startpoint of the scanning [left to right, top to bottom])
+        current_scan = np.array([self.x+(1/2)*creature_size-(1/2)*scan_radius,self.y+(1/2)*creature_size-(1/2)*scan_radius])
         
+        current_scan_x = current_scan[0]
+        current_scan_y = current_scan[1]
+
+        
+
+        """(Top to bottom)"""
+        #Every coordinate in scan_radius around the creature gets checked if it's a food is on the coordinate.
+        for current_scan in range(int(scan_radius+1)):
             
+            breaker = False
+
+            """"(Left to Right)"""
+            #Every coordinate in scan_radius around the creature gets checked if it's a food is on the coordinate.
+            for current_scan in range(int(scan_radius+1)):
+                
+                #Is food on the position of current scan on the x and y position?
+                for food in food_pos_x:
+                    if food <= current_scan_x <= food+food_size:
+
+                        for food in food_pos_y:
+                            if food <= current_scan_y <= food+food_size:
+                                self.pathfinding = False
+
+                            return current_scan
+
+                            breaker = True
+                            break
+
+                else:
+                    current_scan_x += 1
+            
+            if breaker == True:
+                break
+                return current_scan
 
 
-    #The function checks if the creature can reproduce. If yes: the creature reproduces.
+            else:
+                current_scan_y += 1
+
+
+
+
+    #The function checks if the creature can reproduce. If yes, the creature reproduces.
     def reproduce(self):
         pass
 
@@ -199,8 +237,11 @@ class food:
     def __init__(self):
         self.energy = 500
         self.eaten = False
+        
         self.x = 0
         self.y = 0
+        self.vector = np.array([self.x,self.y])
+
         food.food_not_eaten.append(self)
 
     #An unoccupied position for a food getssearched.
@@ -223,6 +264,8 @@ class food:
                     searching_active = False
                     counter1 += 1
                     counter2 += 1
+        
+        self.vector = np.array([self.x,self.y])
 
         #Every x from the new found food gets saved.
         counter3 = self.x
@@ -243,7 +286,10 @@ class food:
     #The function removes the food from the grid.
     def get_eaten(self):
         pass
-    
+
+food_pos_x = []
+food_pos_y = []
+
 
 #################################################################################
   # Mainloop
@@ -275,6 +321,10 @@ for self in food.food_not_eaten:
     self.first_spawn(food_size,food.food_pos_x,food.food_pos_y)
 
 
+#The class food values become normal values so they are usable for other classes.
+food.food_pos_x = food_pos_x
+food.food_pos_y = food_pos_y
+
 #Loop
 while run:
     #How often the screen gets drawn.
@@ -293,8 +343,9 @@ while run:
     for self in creature.creatures_alive:
         self.draw(creature_size)
 
-        if self.pathfinding == False:
+        if True: #self.pathfinding == False:
             self.move_searching(FPS,creature_size)
+            #loc_food = self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y)
 
     pygame.display.update()
 

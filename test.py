@@ -1,37 +1,24 @@
-import random
-
-x = 37
-y = 1000
-
-initial_direction = 0
+import numpy as np
+import math
 
 
 
-i_direction_range = 2
+velocity = 1
 
-def initial_direction(x,y,initial_direction,i_direction_range):
-    rand_range = random.randrange(0,i_direction_range+1) #General random range
+vector = np.array([100,300])
 
-    #Depending on the starting position the exact initial direction gets calculated.
-    if x == 0:
-        initial_direction = 0
+vector_long = np.array([500,500]) - vector #The vector from the creature to the middle of the field with the wrong length gets calculated.
 
-    if x == 1000:
-        pass
 
-    if y == 0:
-        pass
+velocity_x = vector_long[0]
+velocity_y = vector_long[1]
 
-    if y == 1000:
-        unclean_direction = 360 - (1/2) * i_direction_range + rand_range
-    
-    while unclean_direction > 360:
-        unclean_direction -= 360
+#Formel für Vektorverkürzung für die richtige länge nach geschwindigkeit
+t = math.sqrt((velocity_x**2 + velocity_y**2) / velocity**2)
 
-    initial_direction = unclean_direction
+vector_right = np.array([vector_long[0]/t,vector_long[1]/t])
 
-    return initial_direction
+velocity_x = vector_right[0]
+velocity_y = vector_right[1]
 
-sol = initial_direction(x,y,initial_direction,i_direction_range)
-
-print(sol)
+print(velocity_x,velocity_y,vector_right)

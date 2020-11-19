@@ -47,15 +47,21 @@ class creature:
     #Class functions
     def __init__(self):
         
+        #Coordinates
         self.x = 0
         self.y = 0
         self.vector = np.array([self.x,self.y])
         self.initial_direction = 0
 
+        #The x and y speed.
+        self.velocity_x = 0
+        self.velocity_y = 0
+
         self.alive = True
         self.energy = 1000
 
-        self.velocity = 1
+        #Genes
+        self.velocity = 3
         self.sense = 1
         self.size = 1
 
@@ -121,60 +127,45 @@ class creature:
         pygame.draw.rect(win, (255,0,0), (int(self.x),int(self.y),creature_size,creature_size))
         pygame.draw.rect(win, (10,10,10), (int(self.x+5),int(self.y+5),creature_size-10,creature_size-10))
 
-    #A random initial direction is given to all creatures.
-    def direction(self,i_direction_range):
-        rand_range = random.randrange(0,i_direction_range+1) #General random range
+    #The initial direction is calculated for a creature.
+    def direction(self,creature_size):
+        
+        #The vector from the creature to the middle of the world gets calculated. It hasn't the right length yet.
+        vector_long = np.array([500-(1/2)*creature_size,500-(1/2)*creature_size]) - self.vector
+        
 
-        #Depending on the starting position the exact initial direction gets calculated.
-        if self.x == 0:
-            self.initial_direction = 90 - (1/2) * i_direction_range + rand_range 
+        #The formula for getting the divisor for the right length respective to the velocity of the creature.
+        t = math.sqrt((vector_long[0]**2 + vector_long[1]**2) / self.velocity**2)
+        
+        #The vector with the right length gets calculated with the divisor t.
+        vector_right = np.array([vector_long[0]/t,vector_long[1]/t]) 
+        
+        #The vector gets split up in the 2 velocities.
+        self.velocity_x = vector_right[0]
+        self.velocity_y = vector_right[1]
 
-        elif self.x == 1000-creature_size:
-            self.initial_direction = 270 - (1/2) * i_direction_range + rand_range
-
-        elif self.y == 0:
-            self.initial_direction = 180 - (1/2) * i_direction_range + rand_range
-
-        elif self.y == 1000-creature_size:
-            self.initial_direction = 360 - (1/2) * i_direction_range + rand_range
-
-        #If the value is above 360 it subtracts 360.
-        while self.initial_direction > 360:
-            self.initial_direction -= 360
-
+        print(math.sqrt(vector_right[0]**2+vector_right[1]**2))
 
     #The function changes the x and y of a creature somewhat randomly.
-    def move_searching(self,FPS):
+    def move_searching(self,FPS,creature_size):
 
         #For the x speed the cosinus is used. Because 0 degrees is pointing north I have to add 90 in order for it to function with the cosinus.
-        self.x += self.velocity * math.cos(math.radians(self.initial_direction-90))
+        self.x += self.velocity * self.velocity_x
 
 
         #For the y speed the sinus is used. Because 0 degrees is pointing north I have to add 90 in order for it to function with the cosinus.
-        self.y += self.velocity * math.sin(math.radians(self.initial_direction-90))
+        self.y += self.velocity * self.velocity_y
 
 
-        #If the creature reaches the edge a new 
-        #Depending on the position the exact initial direction gets calculated.
-        if self.x <= 0:
-            rand_range = random.randrange(0,i_direction_range+1) #General random range
-            self.initial_direction = 90 - (1/2) * i_direction_range + rand_range
+        self.vector = np.array([self.x,self.y])
+        print(self.vector)
+        
+        #If the creature reaches the edge the direction updates to the middle of the field again.
 
-        elif self.x >= 1000-creature_size:
-            rand_range = random.randrange(0,i_direction_range+1) #General random range
-            self.initial_direction = 270 - (1/2) * i_direction_range + rand_range
+        if self.x <= 0 or self.x >= 1000-creature_size or self.y <= 0 or self.y >= 1000-creature_size:
+            creature.direction(self,creature_size)
+       
 
-        elif self.y <= 0:
-            rand_range = random.randrange(0,i_direction_range+1) #General random range
-            self.initial_direction = 180 - (1/2) * i_direction_range + rand_range
-
-        elif self.y >= 1000-creature_size:
-            rand_range = random.randrange(0,i_direction_range+1) #General random range
-            self.initial_direction = 360 - (1/2) * i_direction_range + rand_range
-
-        #If the value is above 360 it subtracts 360.
-        while self.initial_direction > 360:
-            self.initial_direction -= 360
 
 
     #If the creature has found food, this function pathfinds towards that food.
@@ -277,7 +268,7 @@ pygame.display.set_caption("Natural Selection")
 #The first spawn gets done.
 for self in creature.creatures_alive:
     self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y)
-    self.direction(i_direction_range)
+    self.direction(creature_size)
 
 
 for self in food.food_not_eaten:
@@ -303,7 +294,7 @@ while run:
         self.draw(creature_size)
 
         if self.pathfinding == False:
-            self.move_searching(FPS)
+            self.move_searching(FPS,creature_size)
 
     pygame.display.update()
 

@@ -1,18 +1,10 @@
 
-class food:
-    food_pos_x = [1,2,3]
-
-food_size = 10
-current_scan_x = 2
+food_pos_x = [1,2,3]
 
 
-class sucker:
+for i in food_pos_x:
 
-    ab = [2]
-    def kill_me(ab):
-        for food in ab:
-            if food <= current_scan_x <= food+food_size:
-                print("NICE")
+    if i >= 2:
+        break
 
-
-sucker.kill_me(sucker.ab)
+print(i)

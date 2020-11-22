@@ -172,52 +172,34 @@ class creature:
     #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
     def scan(self,standard_sense,creature_size,food_size,food_pos_x,food_pos_y):
         
-        #The radius in which the creature checks for food.
+        #The radius in which the creature checks for food. (In a circle around it)
         scan_radius = standard_sense*self.sense
 
-        #The startpoint for the scanning. (-1/2 creature size for the middlepoint of the creature; -1/2 scan_radius for the startpoint of the scanning [left to right, top to bottom])
-        current_scan = np.array([self.x+(1/2)*creature_size-(1/2)*scan_radius,self.y+(1/2)*creature_size-(1/2)*scan_radius])
-        
-        current_scan_x = current_scan[0]
-        current_scan_y = current_scan[1]
+        food_found = False
 
-        
-
-        """(Top to bottom)"""
-        #Every coordinate in scan_radius around the creature gets checked if it's a food is on the coordinate.
-        for current_scan in range(int(scan_radius+1)):
+        #All food gets checked whether it is close enough to be seen by the creature.
+        for scanned_food in food.food_not_eaten:
             
-            breaker = False
-
-            """"(Left to Right)"""
-            #Every coordinate in scan_radius around the creature gets checked if it's a food is on the coordinate.
-            for current_scan in range(int(scan_radius+1)):
-                
-                #Is food on the position of current scan on the x and y position?
-                for food in food_pos_x:
-                    if food <= current_scan_x <= food+food_size:
-
-                        for food in food_pos_y:
-                            if food <= current_scan_y <= food+food_size:
-                                self.pathfinding = False
-
-                            return current_scan
-
-                            breaker = True
-                            break
-
-                else:
-                    current_scan_x += 1
+            #The vector between the creature and the food gets calculated (pos food - pos creature)
+            vector_cf = np.array([(scanned_food.vector[0] + (1/2) * food_size) - (self.vector[0] + (1/2) * creature_size), (scanned_food.vector[1] + (1/2) * food_size) - (self.vector[1] + (1/2) * creature_size)])
             
-            if breaker == True:
+            #The distance of the new vector gets calculated.
+            distance_cf = math.sqrt(vector_cf[0]**2+vector_cf[1]**2)
+
+            if distance_cf <= scan_radius:
+
+                food_found = True
                 break
-                return current_scan
+
+        #The creature now goes into the mode where it pathfinds to the food; The last scanned food gets returned if it was inside the radius.
+        if food_found == True:
+            self.pathfinding = True
+            return scanned_food
 
 
-            else:
-                current_scan_y += 1
-
-
+        #If no food has been found the word none gets returned. 
+        else:
+            return "none"
 
 
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
@@ -287,6 +269,8 @@ class food:
     def get_eaten(self):
         pass
 
+
+#The global lists so other classes can work with it.
 food_pos_x = []
 food_pos_y = []
 
@@ -343,9 +327,11 @@ while run:
     for self in creature.creatures_alive:
         self.draw(creature_size)
 
-        if True: #self.pathfinding == False:
+        if self.pathfinding == False:
             self.move_searching(FPS,creature_size)
-            #loc_food = self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y)
+            found_food = self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y)
+            
+        print(self.pathfinding)
 
     pygame.display.update()
 

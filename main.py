@@ -31,18 +31,23 @@ food_border = 300 #define how far away from the border food spawns
 
 i_direction_range = 90 #set the range in which creatures can go at the beginning.
 standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
-
+eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
 
 #The class for the creatures.
 class creature:
     #Class Variables
     num_of_creatures = 0
 
+    #The positions of the creatures.
     creatures_pos_x = []
     creatures_pos_y = []
 
+    #All creatures (dead and alive ones) in separate lists.
     creatures_alive = []
     creatures_dead = []
+
+    #Food which is currently being eaten.
+    food_being_eaten = []
 
     #Class functions
     def __init__(self):
@@ -57,6 +62,7 @@ class creature:
         self.velocity_x = 0
         self.velocity_y = 0
 
+        #Vital signs of the creature.
         self.alive = True
         self.energy = 1000
 
@@ -65,8 +71,11 @@ class creature:
         self.sense = 1
         self.size = 1
 
+        #Dirfferent modes and variables of the creature.
         self.pathfinding = False
+        self.found_food = "none" #If the creature senses a food nearby the information gets saved in this variable.
 
+        #The creature gets appended to the alive creatures list.
         creature.creatures_alive.append(self)
         creature.num_of_creatures += 1
 
@@ -131,7 +140,7 @@ class creature:
     def direction(self,creature_size):
         
         #The vector from the creature to the middle of the world gets calculated. It hasn't the right length yet.
-        vector_long = np.array([500-(1/2)*creature_size,500-(1/2)*creature_size]) - self.vector
+        vector_long = np.array([500-(1/2)*creature_size,500-(1/2)*creature_size]) - np.array([self.x+(1/2)*creature_size,self.y+(1/2)*creature_size])
         
 
         #The formula for getting the divisor for the right length respective to the velocity of the creature.
@@ -164,10 +173,28 @@ class creature:
        
 
 
-
     #If the creature has found food, this function pathfinds towards that food.
-    def move_pathfinding(self):
-        pass
+    def move_pathfinding(self,creature_size,food_size):
+        
+        #The vector for pathfinding to the food gets calculated.(For further information see: creature.direction())
+        vector_long = np.array([self.found_food.x+(1/2)*food_size,self.found_food.y+(1/2)*food_size]) - np.array([self.x+(1/2)*creature_size,self.y+(1/2)*creature_size])
+        t = math.sqrt((vector_long[0]**2 + vector_long[1]**2) / self.velocity**2)
+
+        vector_right = np.array([vector_long[0]/t,vector_long[1]/t]) 
+
+        self.velocity_x = vector_right[0]
+        self.velocity_y = vector_right[1]
+
+        #The x component gets added.
+        self.x += self.velocity * self.velocity_x
+
+
+        #The y component gets added.
+        self.y += self.velocity * self.velocity_y
+
+        #The vector gets updated
+        self.vector = np.array([self.x,self.y])
+
 
     #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
     def scan(self,standard_sense,creature_size,food_size,food_pos_x,food_pos_y):
@@ -193,8 +220,11 @@ class creature:
 
         #The creature now goes into the mode where it pathfinds to the food; The last scanned food gets returned if it was inside the radius.
         if food_found == True:
-            self.pathfinding = True
-            return scanned_food
+            if not scanned_food in creature.food_being_eaten:
+                self.pathfinding = True
+                self.found_food = scanned_food
+
+                creature.food_being_eaten.append(scanned_food) #The food gets appended to the list of food which is currently being eaten.
 
 
         #If no food has been found the word none gets returned. 
@@ -205,6 +235,24 @@ class creature:
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
     def reproduce(self):
         pass
+
+    #The creature eats the food which is close to it.
+    def eat(self,eat_range):
+        
+        #The vector between the creature and the food gets calculated (pos food - pos creature)
+        vector_cf = np.array([(self.found_food.vector[0] + (1/2) * food_size) - (self.vector[0] + (1/2) * creature_size), (self.found_food.vector[1] + (1/2) * food_size) - (self.vector[1] + (1/2) * creature_size)])
+        
+        #The distance of the new vector gets calculated.
+        distance_cf = math.sqrt(vector_cf[0]**2+vector_cf[1]**2)
+        
+        #If the food is close enough it gets eaten.
+        if distance_cf <= eat_range:
+            self.energy += self.found_food.energy
+            self.found_food.get_eaten()
+            self.pathfinding = False
+            print("did it work?")
+
+
 
 
 #The class for the food.
@@ -267,7 +315,8 @@ class food:
 
     #The function removes the food from the grid.
     def get_eaten(self):
-        pass
+        food.food_eaten.append(self)
+        food.food_not_eaten.remove(self)
 
 
 #The global lists so other classes can work with it.
@@ -315,6 +364,7 @@ while run:
     pygame.time.delay(FPS)
 
 
+
     #The different elements get drawn and updated.
     win.fill ((240,240,240))
     
@@ -329,9 +379,14 @@ while run:
 
         if self.pathfinding == False:
             self.move_searching(FPS,creature_size)
-            found_food = self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y)
-            
-        print(self.pathfinding)
+            self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y)
+        
+        elif self.pathfinding == True:
+            self.move_pathfinding(creature_size,food_size)
+            self.eat(eat_range)
+        
+        
+
 
     pygame.display.update()
 

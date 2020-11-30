@@ -24,14 +24,21 @@ run = True
 creature_size = 40
 food_size = 10
 
-num_of_creatures_beginning = 10
-num_of_food_beginning = 20
+num_of_creatures_beginning = 1
+num_of_food_beginning = 30
 
 food_border = 300 #define how far away from the border food spawns
+radius = 500 - (1/2) * creature_size #The boundry for the food (or the island).
+radius_food = 200 - (1/2) * food_size
+
 
 i_direction_range = 90 #set the range in which creatures can go at the beginning.
 standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
 eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
+
+turn_constant = 10 #The change of the vector gets multiplied with the turn_constant for the calculation of the turn energy use.
+search_constant = 1 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
+move_constant = 1 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
 
 #The class for the creatures.
 class creature:
@@ -64,6 +71,7 @@ class creature:
 
         #Vital signs of the creature.
         self.alive = True
+        self.awake = True
         self.energy = 1000
 
         #Genes
@@ -80,55 +88,14 @@ class creature:
         creature.num_of_creatures += 1
 
     #A location for the first spawn gets searched
-    def first_spawn(self,creature_size,creatures_pos_x,creatures_pos_y):
-        decider = random.randrange(0,2)
-        searching_active = True
+    def first_spawn(self,creature_size,creatures_pos_x,creatures_pos_y,radius):
+
+        #A random angle between 0, 360 degrees for the new spawn gets selected.
+        starting_angle = random.randrange(0,361)
         
-        #The decider decides wheater creatures spawn across the x or y axis (0 = x-axis, 1 = y-axis).
-        if decider == 0:
-            
-            while searching_active: #Searching active means, that a possible (unoccupied) location still hasn't been found.
-                self.x = random.randrange(creature_size, (1000-2*creature_size)) #A random x position gets searched on the x axis, without the corners.
-                self.y = random.choice([0, (1000-creature_size)]) #It gets selected randomly wheater the creature starts at the top or bottom.
-                
-                #It gets checked if there is another creature in the same place.
-                counter1 = self.x
-                for _ in range(creature_size):
-                    if counter1 in creatures_pos_x:
-                        searching_active = True
-                        break
+        self.x = 500 - (1/2) * creature_size + radius * math.cos(math.radians(starting_angle-90))
+        self.y = 500 - (1/2) * creature_size + radius * math.sin(math.radians(starting_angle-90))
 
-                    else:
-                        searching_active = False
-                        counter1 += 1
-
-            #Every x from the new found creature gets saved.
-            counter2 = self.x
-            for _ in range(creature_size):
-                creatures_pos_x.append(counter2)
-                counter2 += 1
-
-        if decider == 1:
-            
-            while searching_active:
-                self.x = random.choice([0, (1000-creature_size)])
-                self.y = random.randrange(creature_size,(1000-2*creature_size))
-                counter1 = self.y
-                
-                for _ in range(creature_size):
-                    if counter1 in creatures_pos_y:
-                        searching_active = True
-                        break
-
-                    else:
-                        searching_active = False
-                        counter1 += 1
-
-            counter2 = self.y
-            for _ in range(creature_size):
-                creatures_pos_y.append(counter2)
-                counter2 += 1
-        
         self.vector = np.array([self.x,self.y])
 
     #The function draws a creature on pygame.
@@ -142,24 +109,30 @@ class creature:
         #The vector from the creature to the middle of the world gets calculated. It hasn't the right length yet.
         vector_long = np.array([500-(1/2)*creature_size,500-(1/2)*creature_size]) - np.array([self.x+(1/2)*creature_size,self.y+(1/2)*creature_size])
         
-
         #The formula for getting the divisor for the right length respective to the velocity of the creature.
         t = math.sqrt((vector_long[0]**2 + vector_long[1]**2) / self.velocity**2)
         
         #The vector with the right length gets calculated with the divisor t.
         vector_right = np.array([vector_long[0]/t,vector_long[1]/t]) 
         
+
+        #The change in velocity gets calculated for the energy consumption.
+        delta_vector_x = self.velocity_x - vector_right[0]
+        delta_vector_y = self.velocity_y - vector_right[1]
+        delta_vector_squared = (delta_vector_x ** 2 + delta_vector_y ** 2)
+
+        self.energy -= delta_vector_squared * turn_constant
+
         #The vector gets split up in the 2 velocities.
         self.velocity_x = vector_right[0]
         self.velocity_y = vector_right[1]
 
 
     #The function changes the x and y of a creature somewhat randomly.
-    def move_searching(self,FPS,creature_size):
+    def move_searching(self,FPS,creature_size,move_constant):
 
         #The x component gets added.
         self.x += self.velocity * self.velocity_x
-
 
         #The y component gets added.
         self.y += self.velocity * self.velocity_y
@@ -170,11 +143,12 @@ class creature:
         #If the creature reaches the edge the direction updates to the middle of the field again.
         if self.x <= 0 or self.x >= 1000-creature_size or self.y <= 0 or self.y >= 1000-creature_size:
             creature.direction(self,creature_size)
+
+        #The energy for the velcity gets substracted.
+        self.energy -= (self.velocity ** 2) * move_constant
        
-
-
     #If the creature has found food, this function pathfinds towards that food.
-    def move_pathfinding(self,creature_size,food_size):
+    def move_pathfinding(self,creature_size,food_size,move_constant):
         
         #The vector for pathfinding to the food gets calculated.(For further information see: creature.direction())
         vector_long = np.array([self.found_food.x+(1/2)*food_size,self.found_food.y+(1/2)*food_size]) - np.array([self.x+(1/2)*creature_size,self.y+(1/2)*creature_size])
@@ -182,25 +156,47 @@ class creature:
 
         vector_right = np.array([vector_long[0]/t,vector_long[1]/t]) 
 
+
+        #The change in velocity gets calculated for the energy consumption.
+        delta_vector_x = self.velocity_x - vector_right[0]
+        delta_vector_y = self.velocity_y - vector_right[1]
+        delta_vector_squared = (delta_vector_x ** 2 + delta_vector_y ** 2)
+
+        self.energy -= delta_vector_squared * turn_constant
+
         self.velocity_x = vector_right[0]
         self.velocity_y = vector_right[1]
 
         #The x component gets added.
-        self.x += self.velocity * self.velocity_x
+        self.x += self.velocity_x
 
 
         #The y component gets added.
-        self.y += self.velocity * self.velocity_y
+        self.y += self.velocity_y
 
         #The vector gets updated
         self.vector = np.array([self.x,self.y])
 
+        #The energy for the velcity gets substracted.
+        self.energy -= (self.velocity ** 2) * move_constant
+
+    #The function checks if the creature has reached the boundry of the world (the circle) again.
+    def check_boundry(self,creature_size):
+        
+        #The vector between the creature and the food gets calculated (pos food - pos creature)
+        vector_cb = np.array([500 - (self.x + (1/2) * creature_size), 500 - (self.y + (1/2) * creature_size)])
+        
+        #The distance of the new vector gets calculated.
+        distance_cb = math.sqrt(vector_cb[0]**2+vector_cb[1]**2)
+
+        if distance_cb >= radius:
+            self.awake = False
 
     #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
-    def scan(self,standard_sense,creature_size,food_size,food_pos_x,food_pos_y):
+    def scan(self,standard_sense,creature_size,food_size,food_pos_x,food_pos_y,search_constant):
         
         #The radius in which the creature checks for food. (In a circle around it)
-        scan_radius = standard_sense*self.sense
+        scan_radius = standard_sense * self.sense
 
         food_found = False
 
@@ -230,6 +226,9 @@ class creature:
         #If no food has been found the word none gets returned. 
         else:
             return "none"
+        
+        #The energy used for scanning gets substracted.
+        self.energy -= (self.sense ** 2) * search_constant
 
 
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
@@ -250,7 +249,6 @@ class creature:
             self.energy += self.found_food.energy
             self.found_food.get_eaten()
             self.pathfinding = False
-            print("did it work?")
 
 
 
@@ -275,39 +273,16 @@ class food:
         food.food_not_eaten.append(self)
 
     #An unoccupied position for a food getssearched.
-    def first_spawn(self,food_size,food_pos_x,food_pos_y):
-        searching_active = True
-            
-        while searching_active: #Searching active means, that a possible (unoccupied) location still hasn't been found.
-            self.x = random.randrange(food_border, (1000-food_border)) #A random x position, within the border, gets searched on the x axis.
-            self.y = random.randrange(food_border, (1000-food_border)) #A random y position, within the border, gets searched on the y axis.
-            
-            #It gets checked if there is another food in the same place.
-            counter1 = self.x
-            counter2 = self.y
-            for _ in range(food_size):
-                if counter1 in food_pos_x and counter2 in food_pos_y:
-                    searching_active = True
-                    break
+    def first_spawn(self,food_size,food_pos_x,food_pos_y,radius_food):
+        #A random angle between 0, 360 degrees for the new spawn gets selected.
+        starting_angle = random.randrange(0,361)
 
-                else:
-                    searching_active = False
-                    counter1 += 1
-                    counter2 += 1
+        radius = random.randrange(0,radius_food+1)
         
+        self.x = 500 - (1/2) * food_size + radius * math.cos(math.radians(starting_angle-90))
+        self.y = 500 - (1/2) * food_size + radius * math.sin(math.radians(starting_angle-90))
+
         self.vector = np.array([self.x,self.y])
-
-        #Every x from the new found food gets saved.
-        counter3 = self.x
-        for _ in range(food_size):
-            food_pos_x.append(counter3)
-            counter3 += 1
-
-        #Every y from the new found food gets saved.
-        counter4 = self.y
-        for _ in range(food_size):
-            food_pos_y.append(counter4)
-            counter4 += 1
 
     #The function draws one food on a predefined location.
     def draw(self, food_size):
@@ -346,12 +321,12 @@ pygame.display.set_caption("Natural Selection")
 
 #The first spawn gets done.
 for self in creature.creatures_alive:
-    self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y)
+    self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y,radius)
     self.direction(creature_size)
 
 
 for self in food.food_not_eaten:
-    self.first_spawn(food_size,food.food_pos_x,food.food_pos_y)
+    self.first_spawn(food_size,food.food_pos_x,food.food_pos_y,radius_food)
 
 
 #The class food values become normal values so they are usable for other classes.
@@ -373,18 +348,25 @@ while run:
     for self in food.food_not_eaten:
         self.draw(food_size)
 
-
+    
     for self in creature.creatures_alive:
         self.draw(creature_size)
 
-        if self.pathfinding == False:
-            self.move_searching(FPS,creature_size)
-            self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y)
+        if self.awake == True:
+            if self.pathfinding == False:
+                self.move_searching(FPS,creature_size,move_constant)
+                self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y,search_constant)
+            
+            elif self.pathfinding == True:
+                self.move_pathfinding(creature_size,food_size,move_constant)
+                self.eat(eat_range)
         
-        elif self.pathfinding == True:
-            self.move_pathfinding(creature_size,food_size)
-            self.eat(eat_range)
+        self.check_boundry(creature_size)
+
+        print(self.energy)
+
         
+    
         
 
 

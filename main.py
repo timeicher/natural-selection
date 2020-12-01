@@ -2,7 +2,7 @@
    # Content : Main program of NATURAL SELECTION
    # Creator : Tim Eicher
    # Created : July 2020
-   # Edited  : 15:43 10-11-2020
+   # Edited  : 13:48 01-12-2020
 #################################################################################
 
 #The different libraries are imported.
@@ -25,10 +25,10 @@ creature_size = 40
 food_size = 10
 
 num_of_creatures_beginning = 1
-num_of_food_beginning = 30
+num_of_food_beginning = 15
 
 food_border = 300 #define how far away from the border food spawns
-radius = 500 - (1/2) * creature_size #The boundry for the food (or the island).
+radius = 500 - creature_size #The boundry for the food (or the island).
 radius_food = 200 - (1/2) * food_size
 
 
@@ -36,9 +36,9 @@ i_direction_range = 90 #set the range in which creatures can go at the beginning
 standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
 eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
 
-turn_constant = 10 #The change of the vector gets multiplied with the turn_constant for the calculation of the turn energy use.
+turn_constant = 1 #The change of the vector gets multiplied with the turn_constant for the calculation of the turn energy use.
 search_constant = 1 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
-move_constant = 1 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
+move_constant = 0.5 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
 
 #The class for the creatures.
 class creature:
@@ -75,7 +75,7 @@ class creature:
         self.energy = 1000
 
         #Genes
-        self.velocity = 1
+        self.velocity = 3
         self.sense = 1
         self.size = 1
 
@@ -127,15 +127,14 @@ class creature:
         self.velocity_x = vector_right[0]
         self.velocity_y = vector_right[1]
 
-
     #The function changes the x and y of a creature somewhat randomly.
     def move_searching(self,FPS,creature_size,move_constant):
 
         #The x component gets added.
-        self.x += self.velocity * self.velocity_x
+        self.x += self.velocity_x
 
         #The y component gets added.
-        self.y += self.velocity * self.velocity_y
+        self.y += self.velocity_y
 
         #The vector gets updated
         self.vector = np.array([self.x,self.y])
@@ -200,6 +199,9 @@ class creature:
 
         food_found = False
 
+        #The energy used for scanning gets substracted.
+        self.energy -= (self.sense ** 2) * search_constant
+
         #All food gets checked whether it is close enough to be seen by the creature.
         for scanned_food in food.food_not_eaten:
             
@@ -227,10 +229,6 @@ class creature:
         else:
             return "none"
         
-        #The energy used for scanning gets substracted.
-        self.energy -= (self.sense ** 2) * search_constant
-
-
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
     def reproduce(self):
         pass
@@ -244,11 +242,25 @@ class creature:
         #The distance of the new vector gets calculated.
         distance_cf = math.sqrt(vector_cf[0]**2+vector_cf[1]**2)
         
+        print(distance_cf)
+
         #If the food is close enough it gets eaten.
         if distance_cf <= eat_range:
             self.energy += self.found_food.energy
             self.found_food.get_eaten()
             self.pathfinding = False
+
+    #It gets checked if the creature is still alive.
+    def check_alive(self):
+
+        if self.energy <= 0:
+
+            self.alive == False
+
+            creature.creatures_dead.append(self)
+            creature.creatures_alive.remove(self)
+
+            return True
 
 
 
@@ -344,14 +356,21 @@ while run:
     win.fill ((240,240,240))
     
     
-    #All creatures and food that are alive get drawn. Different functions get excecuted.
+    #Food which has not been eaten gets drawn.
     for self in food.food_not_eaten:
         self.draw(food_size)
 
-    
+    #All creatures get checked if they are still alive.
     for self in creature.creatures_alive:
+        self.check_alive()
+
+    #Alive creatures execute functions.
+    for self in creature.creatures_alive:
+        
         self.draw(creature_size)
 
+        #print(self.energy)
+        
         if self.awake == True:
             if self.pathfinding == False:
                 self.move_searching(FPS,creature_size,move_constant)
@@ -362,12 +381,10 @@ while run:
                 self.eat(eat_range)
         
         self.check_boundry(creature_size)
-
-        print(self.energy)
-
         
-    
         
+        
+
 
 
     pygame.display.update()

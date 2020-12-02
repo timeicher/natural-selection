@@ -11,6 +11,7 @@ import tkinter      #Graphical Interface for setting parameters
 import random       #For chosing random numbers
 import numpy as np  #For Vector Calculations
 import math         #Functions for mathematical calculations (e.g sinus)
+from copy import deepcopy #A function for creating a clean copy from a class list.
 
 #Settings for the pygame implementation.
 win_w = 1000
@@ -25,12 +26,15 @@ creature_size = 40
 food_size = 10
 
 num_of_creatures_beginning = 1
-num_of_food_beginning = 15
+num_of_food_beginning = 10
 
 food_border = 300 #define how far away from the border food spawns
 radius = 500 - creature_size #The boundry for the food (or the island).
 radius_food = 200 - (1/2) * food_size
 
+reproducing_energy = 1000 #How much energy does a creature require to reproduce.
+reproducing_cost = 100 #How much does it cost to reproduce.
+mutation_range = 1 #How much can a descendant differ from its parent. (In decimals e.g. 1 => +-0.1)
 
 i_direction_range = 90 #set the range in which creatures can go at the beginning.
 standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
@@ -75,7 +79,7 @@ class creature:
         self.energy = 1000
 
         #Genes
-        self.velocity = 3
+        self.velocity = 1
         self.sense = 1
         self.size = 1
 
@@ -230,8 +234,26 @@ class creature:
             return "none"
         
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
-    def reproduce(self):
-        pass
+    def reproduce(self,mutation_range):
+        
+        if self.energy >= reproducing_energy:
+
+            self.create_newborn(mutation_range)
+
+    #Create a new creature instance based on its parent.
+    def create_newborn(self,mutation_range):
+
+        #New creature instance.
+        new_creature = creature()
+
+        #The velocity and sense values of the new creature are the same as those of the parent with a chance of mutation. (mutation_range)
+        new_creature.velocity = (self.velocity - (mutation_range/10) + (random.randrange(0,2*mutation_range+1)/10))
+
+        new_creature.sense = (self.sense - (mutation_range/10) + (random.randrange(0,2*mutation_range+1)/10))
+
+
+        
+
 
     #The creature eats the food which is close to it.
     def eat(self,eat_range):
@@ -241,8 +263,6 @@ class creature:
         
         #The distance of the new vector gets calculated.
         distance_cf = math.sqrt(vector_cf[0]**2+vector_cf[1]**2)
-        
-        print(distance_cf)
 
         #If the food is close enough it gets eaten.
         if distance_cf <= eat_range:
@@ -352,9 +372,9 @@ while run:
 
 
 
-    #The different elements get drawn and updated.
-    win.fill ((240,240,240))
-    
+    #The screen gets filled with white.
+    win.fill ((10,10,10))
+    pygame.draw.circle(win,(240,240,240),(500,500),500)
     
     #Food which has not been eaten gets drawn.
     for self in food.food_not_eaten:
@@ -368,8 +388,8 @@ while run:
     for self in creature.creatures_alive:
         
         self.draw(creature_size)
-
-        #print(self.energy)
+        
+        print(self.energy)
         
         if self.awake == True:
             if self.pathfinding == False:
@@ -397,8 +417,26 @@ while run:
             run = False
 
 
-#Debugging.
+#Reproducing
 
+#A list for the reproducing gets created.
+parent_gen = []
+
+#Deepcopy makes it a completely new list.
+parent_gen = deepcopy(creature.creatures_alive)
+
+print(parent_gen)
+
+#Reproducing.
+for self in parent_gen:
+    self.reproduce(mutation_range)
+    
+    
+
+#Debugging.
+for self in creature.creatures_alive:
+    print(creature.creatures_alive)
+    
 
 
 #Pygame gets closed.

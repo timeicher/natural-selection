@@ -1,10 +1,10 @@
+class kill:
 
-food_pos_x = [1,2,3]
+    list = []
 
 
-for i in food_pos_x:
+kk = kill.list
 
-    if i >= 2:
-        break
+kk.append("hi")
 
-print(i)
+print(kill.list,kk)

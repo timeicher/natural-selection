@@ -17,7 +17,7 @@ from copy import deepcopy #A function for creating a clean copy from a class lis
 win_w = 1000
 win_h = 1000
 
-FPS = 0 #FPS is wrong its the simulation speed. The lower the number the faster the simulation.
+FPS = 10 #FPS is wrong its the simulation speed. The lower the number the faster the simulation.
 
 run = True
 
@@ -28,15 +28,15 @@ simluating = True
 creature_size = 40
 food_size = 10
 
-num_of_creatures_beginning = 0
+num_of_creatures_beginning = 5
 num_of_food_beginning = 10
 
 food_border = 300 #define how far away from the border food spawns
 radius = 500 - creature_size #The boundry for the food (or the island).
 radius_food = 200 - (1/2) * food_size
 
-reproducing_energy = 1000 #How much energy does a creature require to reproduce.
-reproducing_cost = 100 #How much does it cost to reproduce.
+reproducing_energy = 2000 #How much energy does a creature require to reproduce.
+reproducing_cost = 1000 #How much does it cost to reproduce.
 mutation_range = 1 #How much can a descendant differ from its parent. (In decimals e.g. 1 => +-0.1)
 
 i_direction_range = 90 #set the range in which creatures can go at the beginning.
@@ -45,7 +45,7 @@ eat_range = 5 #How many pixels does a creature need to come close to a food to e
 
 turn_constant = 1 #The change of the vector gets multiplied with the turn_constant for the calculation of the turn energy use.
 search_constant = 0.5 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
-move_constant = 0.5 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
+move_constant = 1 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
 
 
 #The class for the creatures.
@@ -207,6 +207,8 @@ class creature:
 
         food_found = False
 
+        list_distance = []
+
         #The energy used for scanning gets substracted.
         self.energy -= (self.sense ** 2) * search_constant
 
@@ -219,18 +221,37 @@ class creature:
             #The distance of the new vector gets calculated.
             distance_cf = math.sqrt(vector_cf[0]**2+vector_cf[1]**2)
 
-            if distance_cf <= scan_radius:
+            #The value gets appended to the list with all distances.
+            list_distance.append(distance_cf)
 
+        
+        #The smallest distance gets identified and then associated with the food.
+        if list_distance != []:    
+            smallest = min(list_distance)
+        
+            smallest_food_pos = list_distance.index(smallest)
+            
+            smallest_food = food.food_not_eaten[smallest_food_pos]
+
+            #The vector between the creature and the closest food gets calculated.
+            vector_cf = np.array([(smallest_food.vector[0] + (1/2) * food_size) - (self.vector[0] + (1/2) * creature_size), (smallest_food.vector[1] + (1/2) * food_size) - (self.vector[1] + (1/2) * creature_size)])
+            
+            distance_cf = math.sqrt(vector_cf[0]**2+vector_cf[1]**2)
+
+
+            #Is the food in the scan_radius of the creature?
+            if distance_cf <= scan_radius:
+        
                 food_found = True
-                break
+
 
         #The creature now goes into the mode where it pathfinds to the food; The last scanned food gets returned if it was inside the radius.
         if food_found == True:
-            if not scanned_food in creature.food_being_eaten:
+            if not smallest_food in creature.food_being_eaten:
                 self.pathfinding = True
-                self.found_food = scanned_food
+                self.found_food = smallest_food
 
-                creature.food_being_eaten.append(scanned_food) #The food gets appended to the list of food which is currently being eaten.
+                creature.food_being_eaten.append(smallest_food) #The food gets appended to the list of food which is currently being eaten.
 
 
         #If no food has been found the word none gets returned. 
@@ -322,7 +343,9 @@ class food:
     #The function removes the food from the grid.
     def get_eaten(self):
         food.food_eaten.append(self)
-        food.food_not_eaten.remove(self)
+        
+        if self in food.food_not_eaten:
+            food.food_not_eaten.remove(self)
 
 
 #The global lists so other classes can work with it.
@@ -465,9 +488,6 @@ while True:
 
     if decision == "n":
         break
-    
-    
-
 
 #Debugging.
     

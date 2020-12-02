@@ -17,15 +17,18 @@ from copy import deepcopy #A function for creating a clean copy from a class lis
 win_w = 1000
 win_h = 1000
 
-FPS = 30
+FPS = 0 #FPS is wrong its the simulation speed. The lower the number the faster the simulation.
 
 run = True
+
+#Variables for the rounds.
+simluating = True
 
 #Settings for the simulation.
 creature_size = 40
 food_size = 10
 
-num_of_creatures_beginning = 1
+num_of_creatures_beginning = 0
 num_of_food_beginning = 10
 
 food_border = 300 #define how far away from the border food spawns
@@ -41,8 +44,9 @@ standard_sense = 100 #How much a creature with a sense value of 1 is able to see
 eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
 
 turn_constant = 1 #The change of the vector gets multiplied with the turn_constant for the calculation of the turn energy use.
-search_constant = 1 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
+search_constant = 0.5 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
 move_constant = 0.5 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
+
 
 #The class for the creatures.
 class creature:
@@ -251,10 +255,6 @@ class creature:
 
         new_creature.sense = (self.sense - (mutation_range/10) + (random.randrange(0,2*mutation_range+1)/10))
 
-
-        
-
-
     #The creature eats the food which is close to it.
     def eat(self,eat_range):
         
@@ -281,7 +281,6 @@ class creature:
             creature.creatures_alive.remove(self)
 
             return True
-
 
 
 
@@ -330,6 +329,8 @@ class food:
 food_pos_x = []
 food_pos_y = []
 
+#A list for the reproducing gets created.
+parent_gen = []
 
 #################################################################################
   # Mainloop
@@ -338,9 +339,6 @@ food_pos_y = []
 #New creatures and food instances get created.
 for _ in range(num_of_creatures_beginning):
     creature_x = creature()
-
-for _ in range(num_of_food_beginning):
-    food_x = food()
 
 
 #Pygame gets started.
@@ -351,91 +349,127 @@ win = pygame.display.set_mode((win_w, win_h))
 pygame.display.set_caption("Natural Selection")
 
 
-#The first spawn gets done.
-for self in creature.creatures_alive:
-    self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y,radius)
-    self.direction(creature_size)
-
-
-for self in food.food_not_eaten:
-    self.first_spawn(food_size,food.food_pos_x,food.food_pos_y,radius_food)
-
-
 #The class food values become normal values so they are usable for other classes.
 food.food_pos_x = food_pos_x
 food.food_pos_y = food_pos_y
 
-#Loop
-while run:
-    #How often the screen gets drawn.
-    pygame.time.delay(FPS)
+#Every round is one loop through here.
+while True:
 
 
+    #Printing
+    for self in creature.creatures_alive:
+        print(self.velocity,self.sense)
+        print("\n")
 
-    #The screen gets filled with white.
-    win.fill ((10,10,10))
-    pygame.draw.circle(win,(240,240,240),(500,500),500)
+    breaking = False
+    over = False
+
+    #The new creatures get spawned and get a direction.
+    for self in creature.creatures_alive:
+        self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y,radius)
+        self.direction(creature_size)
+        
+        #Variables get reset
+        self.awake = True
+
+    #The new food generation gets spawned.
+    food.food_not_eaten = []
+    food.food_eaten = []
     
-    #Food which has not been eaten gets drawn.
+    for _ in range(num_of_food_beginning):
+        food_x = food()
+
     for self in food.food_not_eaten:
-        self.draw(food_size)
+        self.first_spawn(food_size,food.food_pos_x,food.food_pos_y,radius_food)
 
-    #All creatures get checked if they are still alive.
-    for self in creature.creatures_alive:
-        self.check_alive()
+    #Looploop
+    while over == False:
+        #How much the simulation gets slowed down.
+        pygame.time.delay(FPS)
 
-    #Alive creatures execute functions.
-    for self in creature.creatures_alive:
+
+        #The screen gets filled with white.
+        win.fill ((10,10,10))
+        pygame.draw.circle(win,(240,240,240),(500,500),500)
         
-        self.draw(creature_size)
-        
-        print(self.energy)
-        
-        if self.awake == True:
-            if self.pathfinding == False:
-                self.move_searching(FPS,creature_size,move_constant)
-                self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y,search_constant)
+        #Food which has not been eaten gets drawn.
+        for self in food.food_not_eaten:
+            self.draw(food_size)
+
+        #All creatures get checked if they are still alive.
+        for self in creature.creatures_alive:
+            self.check_alive()
+
+        #Alive creatures execute functions.
+        for self in creature.creatures_alive:
             
-            elif self.pathfinding == True:
-                self.move_pathfinding(creature_size,food_size,move_constant)
-                self.eat(eat_range)
+            self.draw(creature_size)
+            
+            
+            if self.awake == True:
+                if self.pathfinding == False:
+                    self.move_searching(FPS,creature_size,move_constant)
+                    self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y,search_constant)
+                
+                elif self.pathfinding == True:
+                    self.move_pathfinding(creature_size,food_size,move_constant)
+                    self.eat(eat_range)
+            
+            self.check_boundry(creature_size)
+
+            
+        pygame.display.update()
+
+
+        #If all creatures aren't awake anymore the round is over.
+        for self in creature.creatures_alive:
+            
+            over = False
+            if self.awake == True:
+                over = False
+                break
+            
+            elif self.awake == False:
+                over = True
         
-        self.check_boundry(creature_size)
+        #Does the user want to close the window?
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                over = True
+                breaking = True
         
-        
-        
+        #Are all creatures dead?
+        if creature.creatures_alive == []:
+            break
 
 
-
-    pygame.display.update()
-
-
-
-    #If you press the close button the loop stops.
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            run = False
+            over = True
+            break
+
+    if breaking == True:
+        break
 
 
-#Reproducing
+    #Reproducing
+    #Deepcopy makes it a completely new list.
+    parent_gen = deepcopy(creature.creatures_alive)
 
-#A list for the reproducing gets created.
-parent_gen = []
+    #Reproducing.
+    for self in parent_gen:
+        self.reproduce(mutation_range)
+    
+    decision = input("Do you want to simulate another day?(y/n)")
 
-#Deepcopy makes it a completely new list.
-parent_gen = deepcopy(creature.creatures_alive)
-
-print(parent_gen)
-
-#Reproducing.
-for self in parent_gen:
-    self.reproduce(mutation_range)
+    if decision == "n":
+        break
     
     
+
 
 #Debugging.
-for self in creature.creatures_alive:
-    print(creature.creatures_alive)
     
 
 

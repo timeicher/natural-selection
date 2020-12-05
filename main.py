@@ -6,20 +6,25 @@
 #################################################################################
 
 #The different libraries are imported.
-import pygame       #The world itself runs on pygame
-import tkinter      #Graphical Interface for setting parameters
-import random       #For chosing random numbers
-import numpy as np  #For Vector Calculations
-import math         #Functions for mathematical calculations (e.g sinus)
-from copy import deepcopy #A function for creating a clean copy from a class list.
+import pygame               #The world itself runs on pygame
+import tkinter              #Graphical Interface for setting parameters
+import random               #For chosing random numbers
+import numpy as np          #For Vector Calculations
+import math                 #Functions for mathematical calculations (e.g sinus)
+from copy import deepcopy   #A function for creating a clean copy from a class list.
+import pandas as pd         #Creating and saving excel files easily for storing the data collected in the simulation.
+
 
 #Settings for the pygame implementation.
 win_w = 1000
 win_h = 1000
 
-FPS = 10 #FPS is wrong its the simulation speed. The lower the number the faster the simulation.
+FPS = 0 #FPS is wrong its the simulation speed. The lower the number the faster the simulation.
 
 run = True
+
+#Keeps track of the rounds that will still be played
+roundcounter = 0
 
 #Variables for the rounds.
 simluating = True
@@ -29,7 +34,7 @@ creature_size = 40
 food_size = 10
 
 num_of_creatures_beginning = 5
-num_of_food_beginning = 10
+num_of_food_beginning = 20
 
 food_border = 300 #define how far away from the border food spawns
 radius = 500 - creature_size #The boundry for the food (or the island).
@@ -44,8 +49,12 @@ standard_sense = 100 #How much a creature with a sense value of 1 is able to see
 eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
 
 turn_constant = 1 #The change of the vector gets multiplied with the turn_constant for the calculation of the turn energy use.
-search_constant = 0.5 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
+search_constant = 2 #The energy substracted by sensing its environment gets multipliedf with the search_constant for the calculation of the energy use.
 move_constant = 1 #The energy substracted by moving (e.g. air resistance) gets multiplied with the search_constant for the calculation of the energy use.
+
+#Statistics.
+change_speed = []
+change_sense = []
 
 
 #The class for the creatures.
@@ -359,6 +368,10 @@ parent_gen = []
   # Mainloop
 #################################################################################
 
+#How should the file be called where the collected data will be stored.
+filename = input("How should the file be called where the data will be saved?") + ".xlsx"
+
+
 #New creatures and food instances get created.
 for _ in range(num_of_creatures_beginning):
     creature_x = creature()
@@ -380,6 +393,18 @@ food.food_pos_y = food_pos_y
 while True:
 
 
+    if roundcounter == 0:
+        #How many rounds are simulated.
+        decision = int(input("How many days do you want to simulate?(number for number of rounds / 0=exit)" + "\n"))
+
+        if decision == 0:
+            break
+
+        elif decision > 0:
+            roundcounter = decision
+
+    roundcounter -= 1
+
     #Printing
     for self in creature.creatures_alive:
         print(self.velocity,self.sense)
@@ -395,6 +420,27 @@ while True:
         
         #Variables get reset
         self.awake = True
+
+    #The speed of the current generation gets saved in a new list.
+    current_generation = []
+
+    for self in creature.creatures_alive:
+        current_generation.append(self.velocity)
+
+    #...and appended to the list containing the speed of every generation.
+    change_speed.append(current_generation)
+
+    
+    
+    #The sense of the current generation gets saved in a new list.
+    current_generation = []
+
+    for self in creature.creatures_alive:
+        current_generation.append(self.sense)
+
+    #...and appended to the list containing the speed of every generation.
+    change_sense.append(current_generation)
+
 
     #The new food generation gets spawned.
     food.food_not_eaten = []
@@ -484,13 +530,21 @@ while True:
     for self in parent_gen:
         self.reproduce(mutation_range)
     
-    decision = input("Do you want to simulate another day?(y/n)")
 
-    if decision == "n":
-        break
+#Saving to excel.
+data_speed = pd.DataFrame({"Speed": change_speed})
+data_sense = pd.DataFrame({"Sense": change_sense})
+
+datatoexcel = pd.ExcelWriter(filename,engine="xlsxwriter")
+
+data_speed.to_excel(datatoexcel, sheet_name="speed")
+data_sense.to_excel(datatoexcel, sheet_name="sense")
+
+datatoexcel.save()
+
 
 #Debugging.
-    
+print(change_speed)
 
 
 #Pygame gets closed.

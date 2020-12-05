@@ -1,10 +1,13 @@
-class kill:
-
-    list = []
 
 
-kk = kill.list
 
-kk.append("hi")
+test = "hello "
 
-print(kill.list,kk)
+
+name = test + "10"
+
+name = []
+
+name.append(1)
+
+print(name)

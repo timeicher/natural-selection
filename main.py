@@ -2,7 +2,7 @@
    # Content : Main program of NATURAL SELECTION
    # Creator : Tim Eicher
    # Created : July 2020
-   # Edited  : 13:48 01-12-2020
+   # Edited  : 17:44 06-12-2020
 #################################################################################
 
 #The different libraries are imported.
@@ -55,7 +55,7 @@ move_constant = 1 #The energy substracted by moving (e.g. air resistance) gets m
 #Statistics.
 change_speed = []
 change_sense = []
-
+change_num_of_creatures = []
 
 #The class for the creatures.
 class creature:
@@ -395,7 +395,7 @@ while True:
 
     if roundcounter == 0:
         #How many rounds are simulated.
-        decision = int(input("How many days do you want to simulate?(number for number of rounds / 0=exit)" + "\n"))
+        decision = int(input("How many days do you want to simulate?(number for amount of rounds / 0=exit)" + "\n"))
 
         if decision == 0:
             break
@@ -438,8 +438,19 @@ while True:
     for self in creature.creatures_alive:
         current_generation.append(self.sense)
 
-    #...and appended to the list containing the speed of every generation.
+    #...and appended to the list containing the sense of every generation.
     change_sense.append(current_generation)
+
+
+    #The num of creatures of the current round get saved.
+    creature_counter = 0
+
+    for self in creature.creatures_alive:
+        creature_counter += 1
+
+    change_num_of_creatures.append(creature_counter)
+
+
 
 
     #The new food generation gets spawned.
@@ -534,17 +545,19 @@ while True:
 #Saving to excel.
 data_speed = pd.DataFrame({"Speed": change_speed})
 data_sense = pd.DataFrame({"Sense": change_sense})
+data_num = pd.DataFrame({"Number of creatures": change_num_of_creatures})
 
 datatoexcel = pd.ExcelWriter(filename,engine="xlsxwriter")
 
 data_speed.to_excel(datatoexcel, sheet_name="speed")
 data_sense.to_excel(datatoexcel, sheet_name="sense")
+data_num.to_excel(datatoexcel, sheet_name="number of creatures")
 
 datatoexcel.save()
 
 
 #Debugging.
-print(change_speed)
+
 
 
 #Pygame gets closed.

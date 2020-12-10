@@ -1,13 +1,9 @@
+import pygame
 
+pygame.init()
+win = pygame.display.set_mode((1000, 1000))
 
+while True:
+    win.fill ((10,10,10))
+    pygame.display.update()
 
-test = "hello "
-
-
-name = test + "10"
-
-name = []
-
-name.append(1)
-
-print(name)

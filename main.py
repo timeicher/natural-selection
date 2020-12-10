@@ -7,7 +7,6 @@
 
 #The different libraries are imported.
 import pygame               #The world itself runs on pygame
-import tkinter              #Graphical Interface for setting parameters
 import random               #For chosing random numbers
 import numpy as np          #For Vector Calculations
 import math                 #Functions for mathematical calculations (e.g sinus)
@@ -19,9 +18,9 @@ import pandas as pd         #Creating and saving excel files easily for storing 
 win_w = 1000
 win_h = 1000
 
-FPS = 0 #FPS is wrong its the simulation speed. The lower the number the faster the simulation.
+delay = 0 #The lower the number the faster the simulation.
 
-run = True
+
 
 #Keeps track of the rounds that will still be played
 roundcounter = 0
@@ -44,7 +43,7 @@ reproducing_energy = 2000 #How much energy does a creature require to reproduce.
 reproducing_cost = 1000 #How much does it cost to reproduce.
 mutation_range = 1 #How much can a descendant differ from its parent. (In decimals e.g. 1 => +-0.1)
 
-i_direction_range = 90 #set the range in which creatures can go at the beginning.
+
 standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
 eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
 
@@ -59,16 +58,8 @@ change_num_of_creatures = []
 
 #The class for the creatures.
 class creature:
-    #Class Variables
-    num_of_creatures = 0
-
-    #The positions of the creatures.
-    creatures_pos_x = []
-    creatures_pos_y = []
-
     #All creatures (dead and alive ones) in separate lists.
     creatures_alive = []
-    creatures_dead = []
 
     #Food which is currently being eaten.
     food_being_eaten = []
@@ -80,7 +71,7 @@ class creature:
         self.x = 0
         self.y = 0
         self.vector = np.array([self.x,self.y])
-        self.initial_direction = 0
+        
 
         #The x and y speed.
         self.velocity_x = 0
@@ -91,10 +82,9 @@ class creature:
         self.awake = True
         self.energy = 1000
 
-        #Genes
+        #Traits
         self.velocity = 1
         self.sense = 1
-        self.size = 1
 
         #Dirfferent modes and variables of the creature.
         self.pathfinding = False
@@ -102,10 +92,10 @@ class creature:
 
         #The creature gets appended to the alive creatures list.
         creature.creatures_alive.append(self)
-        creature.num_of_creatures += 1
+
 
     #A location for the first spawn gets searched
-    def first_spawn(self,creature_size,creatures_pos_x,creatures_pos_y,radius):
+    def first_spawn(self,creature_size,radius):
 
         #A random angle between 0, 360 degrees for the new spawn gets selected.
         starting_angle = random.randrange(0,361)
@@ -145,7 +135,7 @@ class creature:
         self.velocity_y = vector_right[1]
 
     #The function changes the x and y of a creature somewhat randomly.
-    def move_searching(self,FPS,creature_size,move_constant):
+    def move_searching(self,creature_size,move_constant):
 
         #The x component gets added.
         self.x += self.velocity_x
@@ -155,10 +145,6 @@ class creature:
 
         #The vector gets updated
         self.vector = np.array([self.x,self.y])
-        
-        #If the creature reaches the edge the direction updates to the middle of the field again.
-        if self.x <= 0 or self.x >= 1000-creature_size or self.y <= 0 or self.y >= 1000-creature_size:
-            creature.direction(self,creature_size)
 
         #The energy for the velcity gets substracted.
         self.energy -= (self.velocity ** 2) * move_constant
@@ -186,7 +172,6 @@ class creature:
         #The x component gets added.
         self.x += self.velocity_x
 
-
         #The y component gets added.
         self.y += self.velocity_y
 
@@ -209,7 +194,7 @@ class creature:
             self.awake = False
 
     #This functions scans the surroundings of a creature for food. The higher the sense variable the better the sense.
-    def scan(self,standard_sense,creature_size,food_size,food_pos_x,food_pos_y,search_constant):
+    def scan(self,standard_sense,creature_size,food_size,search_constant):
         
         #The radius in which the creature checks for food. (In a circle around it)
         scan_radius = standard_sense * self.sense
@@ -261,12 +246,7 @@ class creature:
                 self.found_food = smallest_food
 
                 creature.food_being_eaten.append(smallest_food) #The food gets appended to the list of food which is currently being eaten.
-
-
-        #If no food has been found the word none gets returned. 
-        else:
-            return "none"
-        
+     
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
     def reproduce(self,mutation_range):
         
@@ -299,18 +279,18 @@ class creature:
             self.energy += self.found_food.energy
             self.found_food.get_eaten()
             self.pathfinding = False
+            self.food_being_eaten = "none"
 
     #It gets checked if the creature is still alive.
     def check_alive(self):
 
         if self.energy <= 0:
 
-            self.alive == False
+            self.alive = False
 
-            creature.creatures_dead.append(self)
+
+            #The creature gets removed from the list with all alive creatures.
             creature.creatures_alive.remove(self)
-
-            return True
 
 
 
@@ -320,12 +300,12 @@ class food:
     food_not_eaten = []
     food_eaten = []
 
-    food_pos_x = []
-    food_pos_y = []    
+
+
 
     def __init__(self):
         self.energy = 500
-        self.eaten = False
+
         
         self.x = 0
         self.y = 0
@@ -334,7 +314,7 @@ class food:
         food.food_not_eaten.append(self)
 
     #An unoccupied position for a food getssearched.
-    def first_spawn(self,food_size,food_pos_x,food_pos_y,radius_food):
+    def first_spawn(self,food_size,radius_food):
         #A random angle between 0, 360 degrees for the new spawn gets selected.
         starting_angle = random.randrange(0,361)
 
@@ -357,15 +337,15 @@ class food:
             food.food_not_eaten.remove(self)
 
 
-#The global lists so other classes can work with it.
-food_pos_x = []
-food_pos_y = []
+
+
+
 
 #A list for the reproducing gets created.
 parent_gen = []
 
 #################################################################################
-  # Mainloop
+  # Main Code
 #################################################################################
 
 #How should the file be called where the collected data will be stored.
@@ -385,9 +365,9 @@ win = pygame.display.set_mode((win_w, win_h))
 pygame.display.set_caption("Natural Selection")
 
 
-#The class food values become normal values so they are usable for other classes.
-food.food_pos_x = food_pos_x
-food.food_pos_y = food_pos_y
+
+
+
 
 #Every round is one loop through here.
 while True:
@@ -415,7 +395,7 @@ while True:
 
     #The new creatures get spawned and get a direction.
     for self in creature.creatures_alive:
-        self.first_spawn(creature_size,creature.creatures_pos_x,creature.creatures_pos_y,radius)
+        self.first_spawn(creature_size,radius)
         self.direction(creature_size)
         
         #Variables get reset
@@ -461,15 +441,15 @@ while True:
         food_x = food()
 
     for self in food.food_not_eaten:
-        self.first_spawn(food_size,food.food_pos_x,food.food_pos_y,radius_food)
+        self.first_spawn(food_size,radius_food)
 
     #Looploop
     while over == False:
         #How much the simulation gets slowed down.
-        pygame.time.delay(FPS)
+        pygame.time.delay(delay)
 
 
-        #The screen gets filled with white.
+        #The screen gets filled with white and a circle which marks the border of the world.
         win.fill ((10,10,10))
         pygame.draw.circle(win,(240,240,240),(500,500),500)
         
@@ -489,8 +469,8 @@ while True:
             
             if self.awake == True:
                 if self.pathfinding == False:
-                    self.move_searching(FPS,creature_size,move_constant)
-                    self.scan(standard_sense,creature_size,food_size,food_pos_x,food_pos_y,search_constant)
+                    self.move_searching(creature_size,move_constant)
+                    self.scan(standard_sense,creature_size,food_size,search_constant)
                 
                 elif self.pathfinding == True:
                     self.move_pathfinding(creature_size,food_size,move_constant)

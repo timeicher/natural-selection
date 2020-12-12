@@ -2,7 +2,7 @@
    # Content : Main program of NATURAL SELECTION
    # Creator : Tim Eicher
    # Created : July 2020
-   # Edited  : 17:44 06-12-2020
+   # Edited  : 18:12 12-12-2020
 #################################################################################
 
 #The different libraries are imported.

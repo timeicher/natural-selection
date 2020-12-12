@@ -32,8 +32,8 @@ simluating = True
 creature_size = 40
 food_size = 10
 
-num_of_creatures_beginning = 5
-num_of_food_beginning = 20
+num_of_creatures_beginning = 1
+num_of_food_beginning = 50
 
 food_border = 300 #define how far away from the border food spawns
 radius = 500 - creature_size #The boundry for the food (or the island).
@@ -41,8 +41,8 @@ radius_food = 200 - (1/2) * food_size
 
 reproducing_energy = 2000 #How much energy does a creature require to reproduce.
 reproducing_cost = 1000 #How much does it cost to reproduce.
-mutation_range = 1 #How much can a descendant differ from its parent. (In decimals e.g. 1 => +-0.1)
-
+mutation_range_speed = 0 #How much can a descendant differ from its parent in the trait speed. (In decimals e.g. 1 => +-0.1)
+mutation_range_sense = 0 #How much can a descendant differ from its parent in the trait sense. (In decimals e.g. 1 => +-0.1)
 
 standard_sense = 100 #How much a creature with a sense value of 1 is able to see (in pixels)
 eat_range = 5 #How many pixels does a creature need to come close to a food to eat it.
@@ -248,22 +248,22 @@ class creature:
                 creature.food_being_eaten.append(smallest_food) #The food gets appended to the list of food which is currently being eaten.
      
     #The function checks if the creature can reproduce. If yes, the creature reproduces.
-    def reproduce(self,mutation_range):
+    def reproduce(self,mutation_range_speed,mutation_range_sense):
         
         if self.energy >= reproducing_energy:
 
-            self.create_newborn(mutation_range)
+            self.create_newborn(mutation_range_speed,mutation_range_sense)
 
     #Create a new creature instance based on its parent.
-    def create_newborn(self,mutation_range):
+    def create_newborn(self,mutation_range_speed,mutation_range_sense):
 
         #New creature instance.
         new_creature = creature()
 
         #The velocity and sense values of the new creature are the same as those of the parent with a chance of mutation. (mutation_range)
-        new_creature.velocity = (self.velocity - (mutation_range/10) + (random.randrange(0,2*mutation_range+1)/10))
+        new_creature.velocity = (self.velocity - (mutation_range_speed/10) + (random.randrange(0,2*mutation_range_speed+1)/10))
 
-        new_creature.sense = (self.sense - (mutation_range/10) + (random.randrange(0,2*mutation_range+1)/10))
+        new_creature.sense = (self.sense - (mutation_range_sense/10) + (random.randrange(0,2*mutation_range_sense+1)/10))
 
     #The creature eats the food which is close to it.
     def eat(self,eat_range):
@@ -519,7 +519,7 @@ while True:
 
     #Reproducing.
     for self in parent_gen:
-        self.reproduce(mutation_range)
+        self.reproduce(mutation_range_speed,mutation_range_sense)
     
 
 #Saving to excel.
